@@ -168,9 +168,6 @@ void loadTextFromFile(const char *filename)
             break; // caso exceder o numero de linhas
     }
 
-    // aciona o texto, ou seja, fala que a variavel texto_na_tela pode comecar a receber texto
-    text_active = !text_active;
-
     fclose(file);
 }
 
@@ -417,7 +414,18 @@ void cbMouse(int lin, int col, int button, int state)
         // carrega o texto
         if (state == 0 && lin > 0 && lin < 4 && col > 2 && col < 15)
         {
-            loadTextFromFile("./resources/texto.txt");
+            if (!text_active)
+            {
+                loadTextFromFile("./resources/texto.txt");
+                text_active = true;
+            }
+            else if (text_active)
+            {
+                pagina_atual = 0;
+                free(texto.text);
+                text_active = false;
+            }
+
             click = true;
         }
 
@@ -472,7 +480,17 @@ void cbKeyboard(int key, int modifier, bool special, bool up)
         }
         else if (key == 13)
         {
-            loadTextFromFile("./resources/texto.txt");
+            if (!text_active)
+            {
+                loadTextFromFile("./resources/texto.txt");
+                text_active = true;
+            }
+            else if (text_active)
+            {
+                pagina_atual = 0;
+                free(texto.text);
+                text_active = false;
+            }
             tecla = true;
         }
     }
