@@ -203,7 +203,6 @@ void initMpc(void)
     lightMode = mpcLoadBmp("./resources/light.bmp");
     darkMode = mpcLoadBmp("./resources/dark.bmp");
 
-
     mpcAbout();
 }
 
@@ -250,13 +249,13 @@ void imprimeHora()
     for (int i = 0; i < APP_COLUMNS; i++)
     {
         if (!tema_escuro)
-            {
-                 mpcSetChar(0, i, ' ', F_STD, BLACK, BLACK, 1);
-            }
-            else
-            {
-                 mpcSetChar(0, i, ' ', F_STD, GRAY_5, GRAY_5, 1);
-            }
+        {
+            mpcSetChar(0, i, ' ', F_STD, BLACK, BLACK, 1);
+        }
+        else
+        {
+            mpcSetChar(0, i, ' ', F_STD, GRAY_5, GRAY_5, 1);
+        }
     }
 
     // obtem hora
@@ -274,27 +273,26 @@ void imprimeHora()
     {
         if (!tema_escuro)
         {
-                    mpcSetChar(0, i, hora[i - 40], F_STD, WHITE, BLACK, 1);
-
+            mpcSetChar(0, i, hora[i - 40], F_STD, WHITE, BLACK, 1);
         }
         else
         {
-                    mpcSetChar(0, i, hora[i - 40], F_STD, WHITE, GRAY_5, 1);
-
+            mpcSetChar(0, i, hora[i - 40], F_STD, WHITE, GRAY_5, 1);
         }
     }
 }
 
-void desenhaBotaoTema() {
+void desenhaBotaoTema()
+{
     // desenha as imagens
-        if (!tema_escuro)
-        {
-            mpcShowImg(2, 85, darkMode, 1);
-        }
-        else
-        {
-                mpcShowImg(2, 85, lightMode, 1);
-        }
+    if (!tema_escuro)
+    {
+        mpcShowImg(2, 85, darkMode, 1);
+    }
+    else
+    {
+        mpcShowImg(2, 85, lightMode, 1);
+    }
 }
 
 void desenhaTela()
@@ -317,34 +315,35 @@ void desenhaTela()
     desenhaBotaoTema();
     imprimeHora();
 
-    if (!tema_escuro) {
+    if (!tema_escuro)
+    {
         // desenha o botao load
-    mostraTexto(2, 7, "LOAD");
-    mpcVLine(23, 17, 60, BLACK, 1);
-    mpcVLine(122, 17, 60, BLACK, 1);
-    mpcHLine(17, 23, 122, BLACK, 1);
-    mpcHLine(60, 23, 122, BLACK, 1);
+        mostraTexto(2, 7, "LOAD");
+        mpcVLine(23, 17, 60, BLACK, 1);
+        mpcVLine(122, 17, 60, BLACK, 1);
+        mpcHLine(17, 23, 122, BLACK, 1);
+        mpcHLine(60, 23, 122, BLACK, 1);
 
-    // desenha a caixa de texto
-    mpcVLine(23, 73, 495, BLACK, 1);
-    mpcVLine(745, 73, 495, BLACK, 1);
-    mpcHLine(73, 23, 745, BLACK, 1);
-    mpcHLine(495, 23, 745, BLACK, 1);
+        // desenha a caixa de texto
+        mpcVLine(23, 73, 495, BLACK, 1);
+        mpcVLine(745, 73, 495, BLACK, 1);
+        mpcHLine(73, 23, 745, BLACK, 1);
+        mpcHLine(495, 23, 745, BLACK, 1);
     }
     else
     {
         // desenha o botao load
-    mostraTexto(2, 7, "LOAD");
-    mpcVLine(23, 17, 60, WHITE, 1);
-    mpcVLine(122, 17, 60, WHITE, 1);
-    mpcHLine(17, 23, 122, WHITE, 1);
-    mpcHLine(60, 23, 122, WHITE, 1);
+        mostraTexto(2, 7, "LOAD");
+        mpcVLine(23, 17, 60, WHITE, 1);
+        mpcVLine(122, 17, 60, WHITE, 1);
+        mpcHLine(17, 23, 122, WHITE, 1);
+        mpcHLine(60, 23, 122, WHITE, 1);
 
-    // desenha a caixa de texto
-    mpcVLine(23, 73, 495, WHITE, 1);
-    mpcVLine(745, 73, 495, WHITE, 1);
-    mpcHLine(73, 23, 745, WHITE, 1);
-    mpcHLine(495, 23, 745, WHITE, 1);
+        // desenha a caixa de texto
+        mpcVLine(23, 73, 495, WHITE, 1);
+        mpcVLine(745, 73, 495, WHITE, 1);
+        mpcHLine(73, 23, 745, WHITE, 1);
+        mpcHLine(495, 23, 745, WHITE, 1);
     }
 
     // se ha mais de uma pagina, sera necessario o scroll, logo ele sera exibido
@@ -359,8 +358,8 @@ void desenhaTela()
         }
         else
         {
-                mpcShowImg(4, 94, trianguloUpDark, 1);
-        mpcShowImg(31, 94, trianguloDownDark, 1);
+            mpcShowImg(4, 94, trianguloUpDark, 1);
+            mpcShowImg(31, 94, trianguloDownDark, 1);
         }
 
         // desenha o scroll
@@ -434,7 +433,7 @@ void cbMouse(int lin, int col, int button, int state)
             click = true;
         }
 
-        //controla o tema
+        // controla o tema
         if (state == 0 && lin > 1 && lin < 4 && col > 84 && col < 95)
         {
             tema_escuro = !tema_escuro;
