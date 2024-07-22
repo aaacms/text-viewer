@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 #include "mpc_c.h"
 #include "text-viewer.h"
@@ -9,42 +10,50 @@
 #define TEXT_LINES 28
 #define TEXT_COLUMNS 90
 
-typedef struct {
+typedef struct
+{
     char line[TEXT_COLUMNS];
 } linha;
 
-typedef struct {
+typedef struct
+{
     int tam;
     linha *text;
 } full_text;
 
-
 char tela[APP_LINES][APP_COLUMNS];
 char texto_na_tela[TEXT_LINES][TEXT_COLUMNS];
 full_text texto;
-bool textActive = false;
+bool text_active = false;
 double paginas = 1.0;
 int pagina_atual = 0;
 bool click = false;
+bool tecla = false;
+bool tema_escuro = false;
 
-//armazena o id das imagens
-int trianguloUp;
-int trianguloDown;
+// armazena o id das imagens
+int trianguloUp, trianguloDown, trianguloUpDark, trianguloDownDark, lightMode, darkMode;
 
-int countLines(const char *filename) {
+int countLines(const char *filename)
+{
     FILE *file = fopen(filename, "r");
-    if (!file) return -1;
+    if (!file)
+        return -1;
 
     int lines = 0;
     int colunas = 0;
     char ch;
     int tamanhoPalavra = 0;
 
-    while ((ch = fgetc(file)) != EOF) {
-        if (ch == ' ' || ch == '\n') {
-            if (tamanhoPalavra > 0) { // há uma palavra no array
-                if (colunas + tamanhoPalavra >= TEXT_COLUMNS) { // checa se há espaço na linha
-                    lines++; // move para a próxima linha
+    while ((ch = fgetc(file)) != EOF)
+    {
+        if (ch == ' ' || ch == '\n')
+        {
+            if (tamanhoPalavra > 0)
+            { // ha uma palavra no array
+                if (colunas + tamanhoPalavra >= TEXT_COLUMNS)
+                {            // checa se ha espaco na linha
+                    lines++; // move para a proxima linha
                     colunas = 0;
                 }
 
@@ -52,20 +61,26 @@ int countLines(const char *filename) {
                 tamanhoPalavra = 0; // reseta
             }
 
-            if (ch == '\n') {
+            if (ch == '\n')
+            {
                 lines++;
                 colunas = 0;
-            } else {
-                colunas++;// adiciona o espaço depois da palavra
             }
-
-        } else { // continua construindo a palavra
-            if (tamanhoPalavra < TEXT_COLUMNS) { // garante que o tamanho n transborde
+            else
+            {
+                colunas++; // adiciona o espaco depois da palavra
+            }
+        }
+        else
+        { // continua construindo a palavra
+            if (tamanhoPalavra < TEXT_COLUMNS)
+            { // garante que o tamanho n transborde
                 tamanhoPalavra++;
             }
         }
 
-        if (colunas >= TEXT_COLUMNS) { // não ultrapassa os limites
+        if (colunas >= TEXT_COLUMNS)
+        { // nao ultrapassa os limites
             lines++;
             colunas = 0;
         }
@@ -81,164 +96,295 @@ int countLines(const char *filename) {
     return lines;
 }
 
-void loadTextFromFile(const char* filename) {
+void loadTextFromFile(const char *filename)
+{
 
-    // conta qtas linhas terá o texto e o espaço livre da última página (caso necessário)
+    // conta qtas linhas tera o texto e o espaco livre da ï¿½ltima pï¿½gina (caso necessï¿½rio)
     texto.tam = countLines(filename);
     int linhas_em_pags_completas = TEXT_LINES * (paginas - 1);
     int linhas_na_pag_metade = texto.tam - linhas_em_pags_completas;
     int espacoLivre = (linhas_na_pag_metade == 0 ? 0 : TEXT_LINES - linhas_na_pag_metade);
 
-    FILE* file = fopen(filename, "r");
-    if (!file) {
+    FILE *file = fopen(filename, "r");
+    if (!file)
+    {
         perror("File opening failed");
         return;
     }
 
     texto.text = (linha *)malloc((texto.tam + espacoLivre) * sizeof(linha));
-    memset(texto.text,' ',(texto.tam + espacoLivre)*TEXT_COLUMNS);
+    memset(texto.text, ' ', (texto.tam + espacoLivre) * TEXT_COLUMNS);
 
     int lin = 0, col = 0;
     char ch;
     char palavra[TEXT_COLUMNS]; // guarda palavras temporariamente
     int tamanhoPalavra = 0;
 
-    while ((ch = fgetc(file)) != EOF) {
-        if (ch == ' ' || ch == '\n') {
-            if (tamanhoPalavra > 0) { // há uma palavra no array
-                if (col + tamanhoPalavra >= TEXT_COLUMNS) { // checa se há espaço na linha
-                    lin++; // move para a próxima linha
+    while ((ch = fgetc(file)) != EOF)
+    {
+        if (ch == ' ' || ch == '\n')
+        {
+            if (tamanhoPalavra > 0)
+            { // ha uma palavra no array
+                if (col + tamanhoPalavra >= TEXT_COLUMNS)
+                {          // checa se ha espaco na linha
+                    lin++; // move para a proxima linha
                     col = 0;
                 }
 
                 // copia a palavra para o texto
-                for (int i = 0; i < tamanhoPalavra; i++) {
+                for (int i = 0; i < tamanhoPalavra; i++)
+                {
                     texto.text[lin].line[col++] = palavra[i];
                 }
                 tamanhoPalavra = 0; // reseta
             }
 
-            if (ch == '\n') {
+            if (ch == '\n')
+            {
                 lin++;
                 col = 0;
-            } else {
-                texto.text[lin].line[col++] = ' '; // adiciona o espaço depois da palavra
             }
-
-        } else { // continua construindo a palavra
-            if (tamanhoPalavra < TEXT_COLUMNS) { // garante que o tamanho n transborde
+            else
+            {
+                texto.text[lin].line[col++] = ' '; // adiciona o espaco depois da palavra
+            }
+        }
+        else
+        { // continua construindo a palavra
+            if (tamanhoPalavra < TEXT_COLUMNS)
+            { // garante que o tamanho n transborde
                 palavra[tamanhoPalavra++] = ch;
             }
         }
 
-        if (col >= TEXT_COLUMNS || lin >= texto.tam) { // n ultrapassa os limites
+        if (col >= TEXT_COLUMNS || lin >= texto.tam)
+        { // n ultrapassa os limites
             lin++;
             col = 0;
         }
 
-        if (lin >= texto.tam) break; // caso exceder o número de linhas
+        if (lin >= texto.tam)
+            break; // caso exceder o numero de linhas
     }
 
-    // aciona o texto, ou seja, fala que a variavel texto_na_tela pode começar a receber texto
-    textActive = !textActive;
+    // aciona o texto, ou seja, fala que a variavel texto_na_tela pode comecar a receber texto
+    text_active = !text_active;
 
     fclose(file);
 }
 
+// inicializacao
+void initMpc(void)
+{
+    // mpc configuration
+    mpcSetSize(APP_LINES, APP_COLUMNS);
 
-//inicializacao
-void initMpc(void) {
-   //mpc configuration
-   mpcSetSize(APP_LINES, APP_COLUMNS);
+    // mpc callbacks
+    mpcSetMouseFunc(cbMouse);
+    mpcSetUpdateFunc(cbUpdate);
+    mpcSetKeyboardFunc(cbKeyboard);
 
-   //mpc callbacks
-   mpcSetMouseFunc(cbMouse);
-   mpcSetUpdateFunc(cbUpdate);
-   mpcSetKeyboardFunc(cbKeyboard);
+    // cor do cursor
+    mpcSetCursorColor(RED_3);
 
-    //cor do cursor
-   mpcSetCursorColor(RED_3);
+    // inicializa as matrizes com espacos, padrao de "vazio" no MPC
+    memset(tela, ' ', APP_LINES * APP_COLUMNS);
+    memset(texto_na_tela, ' ', TEXT_LINES * TEXT_COLUMNS);
 
-   //inicializa as matrizes com espacos, padrao de "vazio" no MPC
-   memset(tela,' ',APP_LINES*APP_COLUMNS);
-   memset(texto_na_tela,' ',TEXT_LINES*TEXT_COLUMNS);
+    // posicao e tamanho da 'janela' onde as IMAGENS poderao aparecer
+    mpcSetClippingArea(0, 0, APP_LINES, APP_COLUMNS);
 
-   //posição e tamanho da 'janela' onde as IMAGENS poderão aparecer
-   mpcSetClippingArea(0, 0, APP_LINES, APP_COLUMNS);
+    // carrega as imagens
+    trianguloUp = mpcLoadBmp("./resources/triangleu.bmp");
+    trianguloDown = mpcLoadBmp("./resources/triangled.bmp");
+    trianguloUpDark = mpcLoadBmp("./resources/triangleuescuro.bmp");
+    trianguloDownDark = mpcLoadBmp("./resources/triangledescuro.bmp");
+    lightMode = mpcLoadBmp("./resources/light.bmp");
+    darkMode = mpcLoadBmp("./resources/dark.bmp");
 
-   //carrega as imagens
-   trianguloUp = mpcLoadBmp("./resources/triangleu.bmp");
-   trianguloDown = mpcLoadBmp("./resources/triangled.bmp");
 
-   mpcAbout();
+    mpcAbout();
 }
 
-void atualizaTextoNaTela() {
+void atualizaTextoNaTela()
+{
 
-    if (!textActive) {
-        memset(texto_na_tela,' ',TEXT_LINES*TEXT_COLUMNS);  // se n há texto ativo, exibe apenas a tela em branco
-    } else {
-        for (int l = 0; l < TEXT_LINES; l++) {
-            for (int c = 0; c < TEXT_COLUMNS; c++) {
-                char novo_char = texto.text[l + (TEXT_LINES * pagina_atual)].line[c];
-                if (texto_na_tela[l][c] != novo_char) {  // desenha apenas caracteres que mudaram
-                    texto_na_tela[l][c] = novo_char;
-                    mpcSetChar(5 + l, 3 + c, novo_char, F_STD, BLACK, WHITE, 1);
-                }
+    if (!text_active)
+    {
+        memset(texto_na_tela, ' ', TEXT_LINES * TEXT_COLUMNS); // se n ha texto ativo, exibe apenas a tela em branco
+    }
+    else
+    {
+        for (int l = 0; l < TEXT_LINES; l++)
+        {
+            for (int c = 0; c < TEXT_COLUMNS; c++)
+            {
+                texto_na_tela[l][c] = texto.text[l + (TEXT_LINES * pagina_atual)].line[c];
             }
         }
     }
 }
 
-
-void imprimeTextoNaTela() {
-    for (int l = 5; l < TEXT_LINES + 5; l++) {
+void imprimeTextoNaTela()
+{
+    for (int l = 5; l < TEXT_LINES + 5; l++)
+    {
         for (int c = 3; c < TEXT_COLUMNS + 3; c++)
         {
-            mpcSetChar(l, c, texto_na_tela[l - 5][c - 3], F_STD, BLACK, WHITE, 1);
+            if (!tema_escuro)
+            {
+                mpcSetChar(l, c, texto_na_tela[l - 5][c - 3], F_STD, BLACK, WHITE, 1);
+            }
+            else
+            {
+                mpcSetChar(l, c, texto_na_tela[l - 5][c - 3], F_STD, WHITE, GRAY_5, 1);
+            }
         }
     }
 }
 
-void desenhaTela() {
-    for (int l = 0; l < APP_LINES; l++) {
-        for (int c = 0; c < APP_COLUMNS; c++)
+void imprimeHora()
+{
+
+    for (int i = 0; i < APP_COLUMNS; i++)
+    {
+        if (!tema_escuro)
+            {
+                 mpcSetChar(0, i, ' ', F_STD, BLACK, BLACK, 1);
+            }
+            else
+            {
+                 mpcSetChar(0, i, ' ', F_STD, GRAY_5, GRAY_5, 1);
+            }
+    }
+
+    // obtem hora
+    time_t now = time(NULL);
+
+    // converte
+    struct tm *local_time = localtime(&now);
+
+    // formata
+    char hora[20];
+    strftime(hora, sizeof(hora), "%d-%m-%Y %H:%M:%S", local_time);
+
+    // imprime
+    for (int i = 40; i < (sizeof(hora) + 39); i++)
+    {
+        if (!tema_escuro)
         {
-            mpcSetChar(l, c, tela[l][c], F_STD, BLACK, GRAY_1, 1);
+                    mpcSetChar(0, i, hora[i - 40], F_STD, WHITE, BLACK, 1);
+
+        }
+        else
+        {
+                    mpcSetChar(0, i, hora[i - 40], F_STD, WHITE, GRAY_5, 1);
+
         }
     }
-    //desenha o botão load
-   mostraTexto(2, 7, "LOAD");
-   mpcVLine(23, 13, 62, BLACK, 1);
-   mpcVLine(122, 13, 62, BLACK, 1);
-   mpcHLine(13, 23, 122, BLACK, 1);
-   mpcHLine(62, 23, 122, BLACK, 1);
+}
 
-   //desenha a caixa de texto
-   mpcVLine(23, 73, 495, BLACK, 1);
-   mpcVLine(745, 73, 495, BLACK, 1);
-   mpcHLine(73, 23, 745, BLACK, 1);
-   mpcHLine(495, 23, 745, BLACK, 1);
+void desenhaBotaoTema() {
+    // desenha as imagens
+        if (!tema_escuro)
+        {
+            mpcShowImg(2, 85, darkMode, 1);
+        }
+        else
+        {
+                mpcShowImg(2, 85, lightMode, 1);
+        }
+}
 
-    //se há mais de uma página, é necessário o scroll, logo ele é exibido
-    if (paginas > 1) {
-        //desenha as imagens
-        mpcShowImg(4, 94, trianguloUp, 1);
-        mpcShowImg(31, 94, trianguloDown, 1);
-        //desenha o scroll
+void desenhaTela()
+{
+    for (int l = 0; l < APP_LINES; l++)
+    {
+        for (int c = 0; c < APP_COLUMNS; c++)
+        {
+            if (!tema_escuro)
+            {
+                mpcSetChar(l, c, tela[l][c], F_STD, BLACK, GRAY_1, 1);
+            }
+            else
+            {
+                mpcSetChar(l, c, tela[l][c], F_STD, WHITE, BLACK, 1);
+            }
+        }
+    }
+
+    desenhaBotaoTema();
+    imprimeHora();
+
+    if (!tema_escuro) {
+        // desenha o botao load
+    mostraTexto(2, 7, "LOAD");
+    mpcVLine(23, 17, 60, BLACK, 1);
+    mpcVLine(122, 17, 60, BLACK, 1);
+    mpcHLine(17, 23, 122, BLACK, 1);
+    mpcHLine(60, 23, 122, BLACK, 1);
+
+    // desenha a caixa de texto
+    mpcVLine(23, 73, 495, BLACK, 1);
+    mpcVLine(745, 73, 495, BLACK, 1);
+    mpcHLine(73, 23, 745, BLACK, 1);
+    mpcHLine(495, 23, 745, BLACK, 1);
+    }
+    else
+    {
+        // desenha o botao load
+    mostraTexto(2, 7, "LOAD");
+    mpcVLine(23, 17, 60, WHITE, 1);
+    mpcVLine(122, 17, 60, WHITE, 1);
+    mpcHLine(17, 23, 122, WHITE, 1);
+    mpcHLine(60, 23, 122, WHITE, 1);
+
+    // desenha a caixa de texto
+    mpcVLine(23, 73, 495, WHITE, 1);
+    mpcVLine(745, 73, 495, WHITE, 1);
+    mpcHLine(73, 23, 745, WHITE, 1);
+    mpcHLine(495, 23, 745, WHITE, 1);
+    }
+
+    // se ha mais de uma pagina, sera necessario o scroll, logo ele sera exibido
+    if (paginas > 1 && text_active)
+    {
+
+        // desenha as imagens
+        if (!tema_escuro)
+        {
+            mpcShowImg(4, 94, trianguloUp, 1);
+            mpcShowImg(31, 94, trianguloDown, 1);
+        }
+        else
+        {
+                mpcShowImg(4, 94, trianguloUpDark, 1);
+        mpcShowImg(31, 94, trianguloDownDark, 1);
+        }
+
+        // desenha o scroll
         char b = ' ';
         int tamanho_scroll = 24;
         int inicio_scroll = 7;
         int tamanho_barrinha = tamanho_scroll / paginas;
-        for (int i = 0; i < tamanho_barrinha; i++) {
-            mpcSetChar(inicio_scroll + (pagina_atual * tamanho_barrinha) + i, 96, b, F_STD, BLACK, BLACK, 1);
-            mpcSetChar(inicio_scroll + (pagina_atual * tamanho_barrinha) + i, 97, b, F_STD, BLACK, BLACK, 1);
+        for (int i = 0; i < tamanho_barrinha; i++)
+        {
+            if (!tema_escuro)
+            {
+                mpcSetChar(inicio_scroll + (pagina_atual * tamanho_barrinha) + i, 96, b, F_STD, BLACK, BLACK, 1);
+                mpcSetChar(inicio_scroll + (pagina_atual * tamanho_barrinha) + i, 97, b, F_STD, BLACK, BLACK, 1);
+            }
+            else
+            {
+                mpcSetChar(inicio_scroll + (pagina_atual * tamanho_barrinha) + i, 96, b, F_STD, WHITE, WHITE, 1);
+                mpcSetChar(inicio_scroll + (pagina_atual * tamanho_barrinha) + i, 97, b, F_STD, WHITE, WHITE, 1);
+            }
         }
     }
 }
 
-
-//funcao em loop
+// funcao em loop
 void displayApp(void)
 {
     desenhaTela();
@@ -246,88 +392,98 @@ void displayApp(void)
     imprimeTextoNaTela();
 }
 
-//funcao auxiliar
+// funcao auxiliar
 void mostraTexto(int l, int c, char *msg)
 {
-   for (int cont = 0; cont < strlen(msg); cont++)
-      mpcSetChar(l, c+cont, msg[cont], F_STD, BLACK, GRAY_1, 1);
+    for (int cont = 0; cont < strlen(msg); cont++)
+    {
+        if (!tema_escuro)
+        {
+            mpcSetChar(l, c + cont, msg[cont], F_STD, BLACK, GRAY_1, 1);
+        }
+        else
+        {
+            mpcSetChar(l, c + cont, msg[cont], F_STD, WHITE, BLACK, 1);
+        }
+    }
 }
 
+// callbacks
+void cbMouse(int lin, int col, int button, int state)
+{
+    mpcSetCursorPos(lin, col);
 
-//callbacks
-void cbMouse(int lin, int col, int button, int state) {
-       printf("\nO Mouse foi movido: %d %d %d %d ", lin, col, button, state);
+    if (!click)
+    {
+        // carrega o texto
+        if (state == 0 && lin > 0 && lin < 4 && col > 2 && col < 15)
+        {
+            loadTextFromFile("./resources/texto.txt");
+            click = true;
+        }
 
-   mpcSetCursorPos(lin, col);
+        // controla o scroll
+        if (state == 0 && lin > 29 && lin < 33 && col > 94 && col < 99 && pagina_atual < (paginas - 1))
+        {
+            pagina_atual++;
+            click = true;
+        }
+        else if (state == 0 && lin > 3 && lin < 7 && col > 94 && col < 99 && pagina_atual > 0)
+        {
+            pagina_atual--;
+            click = true;
+        }
 
-   //carrega o texto
-   if (state == 0 && lin > 0 && lin < 4 && col > 2 && col < 15) {
-        loadTextFromFile("./resources/texto.txt");
-        click = true;
-   }
+        //controla o tema
+        if (state == 0 && lin > 1 && lin < 4 && col > 84 && col < 95)
+        {
+            tema_escuro = !tema_escuro;
+            click = true;
+        }
+    }
 
-   //controla o acroll
-   if (state == 0 && lin > 29 && lin < 33 && col > 94 && col < 99 && pagina_atual < (paginas - 1)) {
-        pagina_atual++;
-        click = true;
-   } else if(state == 0 && lin > 3 && lin < 7 && col > 94 && col < 99 && pagina_atual > 0) {
-        pagina_atual--;
-        click = true;
-   }
+    // desativa o click => debouncer
+    if (state == 1)
+        click = false;
 
-   //desativa o click = debouncer
-   if (state == 1) click = false;
-
-   //torna o cursor visivel apenas dentro da tela de texto
-   if (lin > 4 && lin < 33 && col > 2 && col < 93) {
+    // torna o cursor visivel apenas dentro da tela de texto
+    if (lin > 4 && lin < 33 && col > 2 && col < 93)
+    {
         mpcSetCursorVisible(true);
-   } else {
+    }
+    else
+    {
         mpcSetCursorVisible(false);
-   }
+    }
 }
 
-void cbKeyboard(int key, int modifier, bool special, bool up) {
-   printf("\nAlguma tecla foi pressionada: %d %d %d %d", key, modifier, special,  up);
-printf("\nAlguma tecla foi pressionada: %d %d %d %d", key, modifier, special,  up);
+void cbKeyboard(int key, int modifier, bool special, bool up)
+{
+    if (!up && !tecla)
+    {
+        if (key == 101 && pagina_atual > 0)
+        {
+            pagina_atual--;
+            tecla = true;
+        }
+        else if (key == 103 && pagina_atual < (paginas - 1))
+        {
+            pagina_atual++;
+            tecla = true;
+        }
+        else if (key == 13)
+        {
+            loadTextFromFile("./resources/texto.txt");
+            tecla = true;
+        }
+    }
 
-   /*if (special ) //se for uma tecla especial cai aqui
-   {
-       if( up == false ) //pega o evento quando uma seta direcional eh pessionada e nao quando eh solta
-       {
-            switch(key){
-                case 100://seta para esquerda
-                    cursorCol--;
-                    break;
-                case 101://seta para cima
-                    cursorLin--;
-                    break;
-                case 102://seta para direita
-                    cursorCol++;
-                    break;
-                case 103://seta para baixo
-                    cursorLin++;
-                    break;
-            }//switch
-       } //up
-   }
-   else
-   {
-      if(up == false) //soh pega o caractere quando ele for pressionado, ou seja, quando nao eh up.
-      {
-          //usa-se as coordenadas do cursor para inserir o texto.
-          //mpcSetChar(cursorLin, cursorCol, key, F_STD, BLACK, YELLOW_5, 1 );
-          //a cada caractere digitado, move-se o cursor para frente.
-          cursorCol++;
-          //guarda-se a informacao em uma matriz para reexibicao a cada frame. Senao, nao aparece nada na tela.
-          texto[cursorLin][cursorCol] = key;
-          //mose-se o cursor
-          mpcSetCursorPos(cursorLin, cursorCol);
-      }
-   }
-   //changed = true;
-*/
+    // debouncer
+    if (up)
+        tecla = false;
 }
 
-void cbUpdate(void) {
-   displayApp();
+void cbUpdate(void)
+{
+    displayApp();
 }
