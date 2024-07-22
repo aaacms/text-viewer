@@ -21,12 +21,17 @@ typedef struct
     linha *text;
 } full_text;
 
+//variaveis texto
 char tela[APP_LINES][APP_COLUMNS];
 char texto_na_tela[TEXT_LINES][TEXT_COLUMNS];
 full_text texto;
-bool text_active = false;
+
+//variaveis paginas
 double paginas = 1.0;
 int pagina_atual = 0;
+
+//variaveis estados
+bool text_active = false;
 bool click = false;
 bool tecla = false;
 bool tema_escuro = false;
@@ -37,8 +42,7 @@ int trianguloUp, trianguloDown, trianguloUpDark, trianguloDownDark, lightMode, d
 int countLines(const char *filename)
 {
     FILE *file = fopen(filename, "r");
-    if (!file)
-        return -1;
+    if (!file) exit(-1);
 
     int lines = 0;
     int colunas = 0;
@@ -106,11 +110,7 @@ void loadTextFromFile(const char *filename)
     int espacoLivre = (linhas_na_pag_metade == 0 ? 0 : TEXT_LINES - linhas_na_pag_metade);
 
     FILE *file = fopen(filename, "r");
-    if (!file)
-    {
-        perror("File opening failed");
-        return;
-    }
+    if (!file) exit(-1);
 
     texto.text = (linha *)malloc((texto.tam + espacoLivre) * sizeof(linha));
     memset(texto.text, ' ', (texto.tam + espacoLivre) * TEXT_COLUMNS);
@@ -404,56 +404,8 @@ void mostraTexto(int l, int c, char *msg)
     }
 }
 
-// callbacks
-void cbMouse(int lin, int col, int button, int state)
+void cursorVisivel(int lin, int col)
 {
-    mpcSetCursorPos(lin, col);
-
-    if (!click)
-    {
-        // carrega o texto
-        if (state == 0 && lin > 0 && lin < 4 && col > 2 && col < 15)
-        {
-            if (!text_active)
-            {
-                loadTextFromFile("./resources/texto.txt");
-                text_active = true;
-            }
-            else if (text_active)
-            {
-                pagina_atual = 0;
-                free(texto.text);
-                text_active = false;
-            }
-
-            click = true;
-        }
-
-        // controla o scroll
-        if (state == 0 && lin > 29 && lin < 33 && col > 94 && col < 99 && pagina_atual < (paginas - 1))
-        {
-            pagina_atual++;
-            click = true;
-        }
-        else if (state == 0 && lin > 3 && lin < 7 && col > 94 && col < 99 && pagina_atual > 0)
-        {
-            pagina_atual--;
-            click = true;
-        }
-
-        // controla o tema
-        if (state == 0 && lin > 1 && lin < 4 && col > 84 && col < 95)
-        {
-            tema_escuro = !tema_escuro;
-            click = true;
-        }
-    }
-
-    // desativa o click => debouncer
-    if (state == 1)
-        click = false;
-
-    // torna o cursor visivel apenas dentro da tela de texto
     if (lin > 4 && lin < 33 && col > 2 && col < 93)
     {
         mpcSetCursorVisible(true);
@@ -462,6 +414,63 @@ void cbMouse(int lin, int col, int button, int state)
     {
         mpcSetCursorVisible(false);
     }
+}
+
+void carregaTexto()
+{
+    if (!text_active)
+    {
+        loadTextFromFile("./resources/texto.txt");
+        text_active = true;
+    }
+    else if (text_active)
+    {
+        pagina_atual = 0;
+        free(texto.text);
+        text_active = false;
+    }
+}
+
+// callbacks
+void cbMouse(int lin, int col, int button, int state)
+{
+    mpcSetCursorPos(lin, col);
+
+    if (!click && state == 0)
+    {
+        // carrega o texto
+        if (lin > 0 && lin < 4 && col > 2 && col < 15)
+        {
+            carregaTexto();
+            click = true;
+        }
+
+        // controla o scroll
+        if (lin > 29 && lin < 33 && col > 94 && col < 99 && pagina_atual < (paginas - 1))
+        {
+            pagina_atual++;
+            click = true;
+        }
+        else if (lin > 3 && lin < 7 && col > 94 && col < 99 && pagina_atual > 0)
+        {
+            pagina_atual--;
+            click = true;
+        }
+
+        // controla o tema
+        if (lin > 1 && lin < 4 && col > 84 && col < 95)
+        {
+            tema_escuro = !tema_escuro;
+            click = true;
+        }
+    }
+
+    // desativa o click
+    if (state == 1) click = false;
+
+    // torna o cursor visivel apenas dentro da tela de texto
+    cursorVisivel(lin, col);
+
 }
 
 void cbKeyboard(int key, int modifier, bool special, bool up)
@@ -480,24 +489,13 @@ void cbKeyboard(int key, int modifier, bool special, bool up)
         }
         else if (key == 13)
         {
-            if (!text_active)
-            {
-                loadTextFromFile("./resources/texto.txt");
-                text_active = true;
-            }
-            else if (text_active)
-            {
-                pagina_atual = 0;
-                free(texto.text);
-                text_active = false;
-            }
+            carregaTexto();
             tecla = true;
         }
     }
 
     // debouncer
-    if (up)
-        tecla = false;
+    if (up) tecla = false;
 }
 
 void cbUpdate(void)
